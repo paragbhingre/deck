@@ -6,6 +6,7 @@ import {
   IEcsDockerImage,
   IEcsServerGroupCommand,
   IEcsTargetGroupMapping,
+  IEcsContainerMapping,
 } from '../../serverGroupConfiguration.service';
 import { HelpField, TetheredSelect } from '@spinnaker/core';
 import { Alert } from 'react-bootstrap';
@@ -24,6 +25,7 @@ interface IContainerState {
   dockerImages: IEcsDockerImage[];
   targetGroupsAvailable: string[];
   targetGroupMappings: IEcsTargetGroupMapping[];
+  containerMappings: IEcsContainerMapping[];
 }
 
 export class Container extends React.Component<IContainerProps, IContainerState> {
@@ -31,6 +33,7 @@ export class Container extends React.Component<IContainerProps, IContainerState>
     super(props);
     const cmd = this.props.command;
     let defaultContainer = '';
+
     if (cmd.containerMappings && cmd.containerMappings.length > 0) {
       defaultContainer = cmd.containerMappings[0].containerName;
     }
@@ -59,7 +62,18 @@ export class Container extends React.Component<IContainerProps, IContainerState>
       dockerImages: cmd.backingData && cmd.backingData.filtered ? cmd.backingData.filtered.images : [],
       targetGroupMappings: cmd.targetGroupMappings,
       targetGroupsAvailable: cmd.backingData && cmd.backingData.filtered ? cmd.backingData.filtered.targetGroups : [],
+      containerMappings: cmd.containerMappings,
     };
+
+    if (!cmd.useTaskDefinitionArtifact) {
+      this.state.targetGroupMappings.forEach(targetGroupMapping => {
+        targetGroupMapping.containerName = "";
+      });
+
+      this.state.containerMappings.forEach(containerMapping => {
+        containerMapping.containerName = "";
+      });
+    }
   }
 
   public componentDidMount() {
