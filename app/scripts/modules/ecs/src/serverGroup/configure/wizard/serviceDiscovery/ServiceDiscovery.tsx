@@ -4,8 +4,9 @@ import { react2angular } from 'react2angular';
 import { Alert } from 'react-bootstrap';
 import { Option } from 'react-select';
 import {
+  IEcsContainerMapping,
   IEcsServerGroupCommand,
-  IEcsServiceDiscoveryRegistryAssociation,
+  IEcsServiceDiscoveryRegistryAssociation, IEcsTargetGroupMapping,
 } from '../../serverGroupConfiguration.service';
 import { HelpField, TetheredSelect } from '@spinnaker/core';
 
@@ -28,6 +29,9 @@ interface IServiceDiscoveryState {
   serviceDiscoveryAssociations: IEcsServiceDiscoveryRegistryAssociation[];
   serviceDiscoveryRegistriesAvailable: IEcsServiceDiscoveryRegistry[];
   useTaskDefinitionArtifact: boolean;
+  targetGroupMappings: IEcsTargetGroupMapping[];
+  containerMappings: IEcsContainerMapping[];
+
 }
 
 export class ServiceDiscovery extends React.Component<IServiceDiscoveryProps, IServiceDiscoveryState> {
@@ -40,11 +44,21 @@ export class ServiceDiscovery extends React.Component<IServiceDiscoveryProps, IS
       serviceDiscoveryRegistriesAvailable:
         cmd.backingData && cmd.backingData.filtered ? cmd.backingData.filtered.serviceDiscoveryRegistries : [],
       useTaskDefinitionArtifact: cmd.useTaskDefinitionArtifact,
+      containerMappings: cmd.containerMappings,
+      targetGroupMappings: cmd.targetGroupMappings,
     };
 
     if (!this.state.useTaskDefinitionArtifact) {
       this.state.serviceDiscoveryAssociations.forEach(serviceDiscoveryRegistryAssociation => {
         serviceDiscoveryRegistryAssociation.containerName = null
+      });
+
+      this.state.containerMappings.forEach(containerMapping => {
+        containerMapping.containerName = "";
+      });
+
+      this.state.targetGroupMappings.forEach(targetGroupMapping => {
+        targetGroupMapping.containerName = "";
       });
     }
   }
