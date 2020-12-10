@@ -107,7 +107,6 @@ angular
           defaultCredentials,
           defaultRegion,
         );
-
         return $q
           .all({
             preferredZones: preferredZonesLoader,
@@ -262,9 +261,10 @@ angular
           command.stack = serverGroup.moniker.stack;
           command.region = serverGroup.region;
           command.ecsClusterName = serverGroup.ecsCluster;
+          command.ecsDescribeCluster = serverGroup.ecsDescribeCluster;
           command.capacity = serverGroup.capacity;
           command.viewState.mode = mode;
-
+          //command.capacityProviderStrategies = serverGroup.ecsDescribeCluster
           return command;
         });
       }

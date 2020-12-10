@@ -10,7 +10,9 @@ export class EcsClusterReader {
   }
 
   public listDescribeClusters(account: string, region: string): PromiseLike<IEcsDescribeCluster[]> {
-    return API.all('ecs').all('ecsDescribeClusters').all(account).all(region).getList();
+    if(account != null && region != null){
+      return API.all('ecs').all('getEcsClusterDescriptions').all(account).all(region).getList();
+    }
   }
 
 }
