@@ -246,7 +246,7 @@ module(ECS_SERVERGROUP_CONFIGURE_WIZARD_CLONESERVERGROUP_ECS_CONTROLLER, [
     $scope.capacityProviderState = {
       useCapacityProviders:
         $scope.command.capacityProviderStrategies && $scope.command.capacityProviderStrategies.length > 0,
-        useDefaultCapacityProviders: !$scope.command.capacityProviderStrategies,
+        useDefaultCapacityProviders: $scope.command.capacityProviderStrategies && $scope.command.capacityProviderStrategies == 0,
       updateComputeOption: function (chosenOption) {
         if (chosenOption == 'launchType') {
           $scope.command.capacityProviderStrategies = [];
