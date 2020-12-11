@@ -38,6 +38,7 @@ import { IMetricAlarmDescriptor } from '../../metricAlarm/MetricAlarm';
 import { PlacementStrategyService } from '../../placementStrategy/placementStrategy.service';
 import { IPlacementStrategy } from '../../placementStrategy/IPlacementStrategy';
 import { IEcsClusterDescriptor } from '../../ecsCluster/IEcsCluster';
+import { IEcsDescribeCluster } from '../../ecsCluster/IEcsDescribeCluster'
 import { SecretReader } from '../../secrets/secret.read.service';
 import { ISecretDescriptor } from '../../secrets/ISecret';
 import { ServiceDiscoveryReader } from '../../serviceDiscovery/serviceDiscovery.read.service';
@@ -70,6 +71,7 @@ export interface IEcsServerGroupCommandBackingDataFiltered extends IServerGroupC
   targetGroups: string[];
   iamRoles: string[];
   ecsClusters: string[];
+  ecsDescribeCluster: IEcsDescribeCluster[];
   metricAlarms: IMetricAlarmDescriptor[];
   subnetTypes: string[];
   securityGroupNames: string[];
@@ -82,6 +84,7 @@ export interface IEcsServerGroupCommandBackingData extends IServerGroupCommandBa
   filtered: IEcsServerGroupCommandBackingDataFiltered;
   targetGroups: string[];
   ecsClusters: IEcsClusterDescriptor[];
+  ecsDescribeCluster: IEcsDescribeCluster[];
   iamRoles: IRoleDescriptor[];
   metricAlarms: IMetricAlarmDescriptor[];
   launchTypes: string[];
@@ -136,6 +139,7 @@ export interface IEcsServerGroupCommand extends IServerGroupCommand {
   serviceDiscoveryAssociations: IEcsServiceDiscoveryRegistryAssociation[];
   useTaskDefinitionArtifact: boolean;
 
+  ecsDescribeCluster: IEcsDescribeCluster[];
   subnetTypeChanged: (command: IEcsServerGroupCommand) => IServerGroupCommandResult;
   placementStrategyNameChanged: (command: IEcsServerGroupCommand) => IServerGroupCommandResult;
   regionIsDeprecated: (command: IEcsServerGroupCommand) => boolean;
@@ -241,6 +245,7 @@ export class EcsServerGroupConfigurationService {
         subnets: SubnetReader.listSubnetsByProvider('ecs'),
         iamRoles: this.iamRoleReader.listRoles('ecs'),
         ecsClusters: this.ecsClusterReader.listClusters(),
+        ecsDescribeCluster: this.ecsClusterReader.listDescribeClusters(cmd.credentials, cmd.region),
         metricAlarms: this.metricAlarmReader.listMetricAlarms(),
         securityGroups: this.securityGroupReader.getAllSecurityGroups(),
         launchTypes: this.$q.when(clone(this.launchTypes)),
@@ -262,6 +267,7 @@ export class EcsServerGroupConfigurationService {
         this.configureAvailableSubnetTypes(cmd);
         this.configureAvailableSecurityGroups(cmd);
         this.configureAvailableEcsClusters(cmd);
+        this.configureAvailableEcsDescribeClusters(cmd);
         this.configureAvailableSecrets(cmd);
         this.configureAvailableServiceDiscoveryRegistries(cmd);
         this.configureAvailableImages(cmd);
@@ -271,6 +277,44 @@ export class EcsServerGroupConfigurationService {
         this.attachEventHandlers(cmd);
       });
   }
+
+
+
+  public configureAvailableEcsDescribeClusters(command: IEcsServerGroupCommand): void {
+    /*if(command.credentials != null && command.region != null) {
+      this.$q.all({
+        ecsDescribeCluster: this.ecsClusterReader.listDescribeClusters(command.credentials, command.region)
+      }).then((command: Partial<IEcsServerGroupCommandBackingData>) => {
+        command.backingData.filtered.ecsDescribeCluster = chain(command.ecsDescribeCluster)
+          .map((cluster) => this.mapDescribeClusters(cluster))
+          .value();
+      });
+    }*/
+    command.backingData.filtered.ecsDescribeCluster = chain(command.backingData.ecsDescribeCluster)
+      .map((cluster) => this.mapDescribeClusters(cluster))
+      .value();
+  }
+
+  public mapDescribeClusters(describeClusters: IEcsDescribeCluster) : IEcsDescribeCluster {
+    return {
+      activeServicesCount : describeClusters.activeServicesCount,
+      attachments : describeClusters.attachments,
+      attachmentsStatus : describeClusters.attachmentsStatus,
+      capacityProviders : describeClusters.capacityProviders,
+      clusterArn : describeClusters.clusterArn,
+      clusterName :describeClusters.clusterName,
+      defaultCapacityProviderStrategy : describeClusters.defaultCapacityProviderStrategy,
+      pendingTasksCount : describeClusters.pendingTasksCount,
+      registeredContainerInstancesCount : describeClusters.registeredContainerInstancesCount,
+      runningTasksCount : describeClusters.runningTasksCount,
+      settings : describeClusters.settings,
+      statistics : describeClusters.statistics,
+      status : describeClusters.status,
+      tags : describeClusters.tags,
+      failures: describeClusters.failures
+    };
+  }
+
 
   public applyOverrides(phase: string, command: IEcsServerGroupCommand): void {
     this.serverGroupCommandRegistry.getCommandOverrides('ecs').forEach((override: any) => {

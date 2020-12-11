@@ -246,6 +246,7 @@ module(ECS_SERVERGROUP_CONFIGURE_WIZARD_CLONESERVERGROUP_ECS_CONTROLLER, [
     $scope.capacityProviderState = {
       useCapacityProviders:
         $scope.command.capacityProviderStrategies && $scope.command.capacityProviderStrategies.length > 0,
+        useDefaultCapacityProviders: !$scope.command.capacityProviderStrategies,
       updateComputeOption: function (chosenOption) {
         if (chosenOption == 'launchType') {
           $scope.command.capacityProviderStrategies = [];
@@ -254,6 +255,21 @@ module(ECS_SERVERGROUP_CONFIGURE_WIZARD_CLONESERVERGROUP_ECS_CONTROLLER, [
           $scope.command.capacityProviderStrategies = $scope.command.capacityProviderStrategies || [];
         }
       },
-    };
+
+      updateStrategy: function (choseDefaultCapacityProvider) {
+        $scope.command.capacityProviderNames = [];
+        $scope.command.capacityProviderStrategies = [];
+        const data = ($scope.command.backingData.ecsDescribeCluster).filter(function (el) {
+          return el.clusterName == ($scope.command.ecsClusterName)
+        })[0]
+        if (choseDefaultCapacityProvider == 'defaultCapacityProvider') {
+          if (data.defaultCapacityProviderStrategy.length > 0)
+            $scope.command.capacityProviderStrategies = data.defaultCapacityProviderStrategy;
+        } else if (choseDefaultCapacityProvider == 'customCapacityProvider') {
+          if (data.capacityProviders.length > 0)
+            $scope.command.capacityProviderNames = data.capacityProviders
+        }
+      },
+  };
   },
 ]);
