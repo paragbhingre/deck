@@ -281,15 +281,20 @@ export class EcsServerGroupConfigurationService {
 
 
   public configureAvailableEcsDescribeClusters(command: IEcsServerGroupCommand): void {
-    /*if(command.credentials != null && command.region != null) {
+    if(command.credentials != null && command.region != null) {
       this.$q.all({
         ecsDescribeCluster: this.ecsClusterReader.listDescribeClusters(command.credentials, command.region)
-      }).then((command: Partial<IEcsServerGroupCommandBackingData>) => {
-        command.backingData.filtered.ecsDescribeCluster = chain(command.ecsDescribeCluster)
+      }).then((result: Partial<IEcsServerGroupCommandBackingData>) => {
+        command.backingData.filtered.ecsDescribeCluster = chain(result.ecsDescribeCluster)
           .map((cluster) => this.mapDescribeClusters(cluster))
           .value();
+
+        command.backingData.ecsDescribeCluster = chain(result.ecsDescribeCluster)
+          .map((cluster) => this.mapDescribeClusters(cluster))
+          .value();
+
       });
-    }*/
+    }
     command.backingData.filtered.ecsDescribeCluster = chain(command.backingData.ecsDescribeCluster)
       .map((cluster) => this.mapDescribeClusters(cluster))
       .value();
@@ -602,6 +607,7 @@ export class EcsServerGroupConfigurationService {
         this.configureAvailableSecurityGroups(command);
         this.configureAvailableSecrets(command);
         this.configureAvailableServiceDiscoveryRegistries(command);
+        this.configureAvailableEcsDescribeClusters(command);
       }
 
       return result;
@@ -628,6 +634,7 @@ export class EcsServerGroupConfigurationService {
         this.configureAvailableSecrets(command);
         this.configureAvailableServiceDiscoveryRegistries(command);
         this.configureAvailableRegions(command);
+        this.configureAvailableEcsDescribeClusters(command);
 
         if (!some(backingData.filtered.regions, { name: command.region })) {
           command.region = null;
