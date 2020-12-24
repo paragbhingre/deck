@@ -270,7 +270,7 @@ module(ECS_SERVERGROUP_CONFIGURE_WIZARD_CLONESERVERGROUP_ECS_CONTROLLER, [
         $scope.command.choseDefaultCapacityProvider = "";
         $scope.command.capacityProviderNames = [];
         $scope.command.capacityProviderStrategy = [];
-        const data = ($scope.command.backingData.ecsDescribeCluster).filter(function (el) {
+        const data = ($scope.command.backingData.capacityProvidersAndStrategy).filter(function (el) {
           return el.clusterName == ($scope.command.ecsClusterName)
         })[0]
         if (choseDefaultCapacityProvider == 'defaultCapacityProvider') {

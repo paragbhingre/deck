@@ -38,7 +38,8 @@ import { IMetricAlarmDescriptor } from '../../metricAlarm/MetricAlarm';
 import { PlacementStrategyService } from '../../placementStrategy/placementStrategy.service';
 import { IPlacementStrategy } from '../../placementStrategy/IPlacementStrategy';
 import { IEcsClusterDescriptor } from '../../ecsCluster/IEcsCluster';
-import { IEcsDescribeCluster } from '../../ecsCluster/IEcsDescribeCluster'
+import { IEcsDescribeClusterResponse } from '../../ecsCluster/IEcsDescribeClusterResponse';
+import { IEcsAvailableCapacityProviders } from '../../ecsCluster/IEcsAvailableCapacityProviders';
 import { SecretReader } from '../../secrets/secret.read.service';
 import { ISecretDescriptor } from '../../secrets/ISecret';
 import { ServiceDiscoveryReader } from '../../serviceDiscovery/serviceDiscovery.read.service';
@@ -71,7 +72,7 @@ export interface IEcsServerGroupCommandBackingDataFiltered extends IServerGroupC
   targetGroups: string[];
   iamRoles: string[];
   ecsClusters: string[];
-  ecsDescribeCluster: IEcsDescribeCluster[];
+  //ecsDescribeCluster: IEcsDescribeClusterResponse[];
   metricAlarms: IMetricAlarmDescriptor[];
   subnetTypes: ISubnet[];
   securityGroupNames: string[];
@@ -84,7 +85,8 @@ export interface IEcsServerGroupCommandBackingData extends IServerGroupCommandBa
   filtered: IEcsServerGroupCommandBackingDataFiltered;
   targetGroups: string[];
   ecsClusters: IEcsClusterDescriptor[];
-  ecsDescribeCluster: IEcsDescribeCluster[];
+  capacityProvidersAndStrategy: IEcsAvailableCapacityProviders[];
+  ecsDescribeCluster: IEcsDescribeClusterResponse[];
   iamRoles: IRoleDescriptor[];
   metricAlarms: IMetricAlarmDescriptor[];
   launchTypes: string[];
@@ -140,7 +142,6 @@ export interface IEcsServerGroupCommand extends IServerGroupCommand {
   serviceDiscoveryAssociations: IEcsServiceDiscoveryRegistryAssociation[];
   useTaskDefinitionArtifact: boolean;
 
-  ecsDescribeCluster: IEcsDescribeCluster[];
   subnetTypeChanged: (command: IEcsServerGroupCommand) => IServerGroupCommandResult;
   placementStrategyNameChanged: (command: IEcsServerGroupCommand) => IServerGroupCommandResult;
   regionIsDeprecated: (command: IEcsServerGroupCommand) => boolean;
@@ -262,13 +263,14 @@ export class EcsServerGroupConfigurationService {
         if (cmd.viewState.contextImages) {
           backingData.images = backingData.images.concat(cmd.viewState.contextImages);
         }
+
         cmd.backingData = backingData as IEcsServerGroupCommandBackingData;
         this.configureVpcId(cmd);
         this.configureAvailableIamRoles(cmd);
         this.configureAvailableSubnetTypes(cmd);
         this.configureAvailableSecurityGroups(cmd);
         this.configureAvailableEcsClusters(cmd);
-        this.configureAvailableEcsDescribeClusters(cmd);
+        this.configureCapacityProvidersAndStrategy(cmd);
         this.configureAvailableSecrets(cmd);
         this.configureAvailableServiceDiscoveryRegistries(cmd);
         this.configureAvailableImages(cmd);
@@ -279,43 +281,22 @@ export class EcsServerGroupConfigurationService {
       });
   }
 
-  public configureAvailableEcsDescribeClusters(command: IEcsServerGroupCommand): void {
-    if(command.credentials != null && command.region != null) {
+  public configureCapacityProvidersAndStrategy(command: IEcsServerGroupCommand): void {
       this.$q.all({
         ecsDescribeCluster: this.ecsClusterReader.listDescribeClusters(command.credentials, command.region)
       }).then((result: Partial<IEcsServerGroupCommandBackingData>) => {
-        command.backingData.filtered.ecsDescribeCluster = chain(result.ecsDescribeCluster)
-          .map((cluster) => this.mapDescribeClusters(cluster))
+        command.backingData.capacityProvidersAndStrategy = chain(result.ecsDescribeCluster)
+          .map((cluster) => this.mapCapacityProvidersAndStrategy(cluster))
           .value();
-
-        command.backingData.ecsDescribeCluster = chain(result.ecsDescribeCluster)
-          .map((cluster) => this.mapDescribeClusters(cluster))
-          .value();
-
       });
-    }
-    command.backingData.filtered.ecsDescribeCluster = chain(command.backingData.ecsDescribeCluster)
-      .map((cluster) => this.mapDescribeClusters(cluster))
-      .value();
   }
 
-  public mapDescribeClusters(describeClusters: IEcsDescribeCluster) : IEcsDescribeCluster {
+  public mapCapacityProvidersAndStrategy(describeClusters: IEcsDescribeClusterResponse) : IEcsAvailableCapacityProviders {
     return {
-      activeServicesCount : describeClusters.activeServicesCount,
-      attachments : describeClusters.attachments,
-      attachmentsStatus : describeClusters.attachmentsStatus,
       capacityProviders : describeClusters.capacityProviders,
       clusterArn : describeClusters.clusterArn,
       clusterName :describeClusters.clusterName,
-      defaultCapacityProviderStrategy : describeClusters.defaultCapacityProviderStrategy,
-      pendingTasksCount : describeClusters.pendingTasksCount,
-      registeredContainerInstancesCount : describeClusters.registeredContainerInstancesCount,
-      runningTasksCount : describeClusters.runningTasksCount,
-      settings : describeClusters.settings,
-      statistics : describeClusters.statistics,
-      status : describeClusters.status,
-      tags : describeClusters.tags,
-      failures: describeClusters.failures
+      defaultCapacityProviderStrategy : describeClusters.defaultCapacityProviderStrategy
     };
   }
 
@@ -622,7 +603,7 @@ export class EcsServerGroupConfigurationService {
         this.configureAvailableSecurityGroups(command);
         this.configureAvailableSecrets(command);
         this.configureAvailableServiceDiscoveryRegistries(command);
-        this.configureAvailableEcsDescribeClusters(command);
+        this.configureCapacityProvidersAndStrategy(command);
       }
 
       return result;
@@ -649,7 +630,7 @@ export class EcsServerGroupConfigurationService {
         this.configureAvailableSecrets(command);
         this.configureAvailableServiceDiscoveryRegistries(command);
         this.configureAvailableRegions(command);
-        this.configureAvailableEcsDescribeClusters(command);
+        this.configureCapacityProvidersAndStrategy(command);
 
         if (!some(backingData.filtered.regions, { name: command.region })) {
           command.region = null;
