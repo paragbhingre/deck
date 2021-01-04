@@ -250,14 +250,35 @@ module(ECS_SERVERGROUP_CONFIGURE_WIZARD_CLONESERVERGROUP_ECS_CONTROLLER, [
     $scope.capacityProviderState = {
       useCapacityProviders:
         $scope.command.capacityProviderStrategy && $scope.command.capacityProviderStrategy.length > 0,
+      useDefaultCapacityProviders: $scope.command.choseDefaultCapacityProvider || $scope.command.capacityProviderStrategy && $scope.command.capacityProviderStrategy == 0,
       updateComputeOption: function (chosenOption) {
         if (chosenOption == 'launchType') {
           $scope.command.capacityProviderStrategy = [];
         } else if (chosenOption == 'capacityProviders') {
           $scope.command.launchType = '';
           $scope.command.capacityProviderStrategy = $scope.command.capacityProviderStrategy || [];
+          $scope.capacityProviderState.useDefaultCapacityProviders =  $scope.command.choseDefaultCapacityProvider || $scope.command.capacityProviderStrategy && $scope.command.capacityProviderStrategy == 0;
+          $scope.capacityProviderState.useDefaultCapacityProviders ? $scope.capacityProviderState.updateStrategy('defaultCapacityProvider') : $scope.capacityProviderState.updateStrategy('customCapacityProvider')
         }
       },
+
+      /*updateStrategy: function (choseDefaultCapacityProvider) {
+        $scope.command.choseDefaultCapacityProvider = "";
+        $scope.command.capacityProviderNames = [];
+        $scope.command.capacityProviderStrategy = [];
+        const data = ($scope.command.backingData.capacityProvidersAndStrategy).filter(function (el) {
+          return el.clusterName == ($scope.command.ecsClusterName)
+        })[0]
+        if (choseDefaultCapacityProvider == 'defaultCapacityProvider') {
+          $scope.command.choseDefaultCapacityProvider = true;
+          if (data.defaultCapacityProviderStrategy.length > 0)
+            $scope.command.capacityProviderStrategy = data.defaultCapacityProviderStrategy;
+        } else if (choseDefaultCapacityProvider == 'customCapacityProvider') {
+          $scope.command.choseDefaultCapacityProvider = false;
+          if (data.capacityProviders.length > 0)
+            $scope.command.capacityProviderNames = data.capacityProviders
+        }
+      },*/
     };
   },
 ]);
