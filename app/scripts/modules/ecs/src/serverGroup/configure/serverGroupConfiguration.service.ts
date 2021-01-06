@@ -86,8 +86,8 @@ export interface IEcsServerGroupCommandBackingData extends IServerGroupCommandBa
   ecsClusters: IEcsClusterDescriptor[];
   iamRoles: IRoleDescriptor[];
   metricAlarms: IMetricAlarmDescriptor[];
-  capacityProvidersAndStrategy: IEcsAvailableCapacityProviders[];
-  //ecsDescribeCluster: IEcsDescribeClusterResponse[];
+  availableCapacityProviders: IEcsAvailableCapacityProviders[];
+  ecsDescribeCluster: IEcsDescribeClusterResponse[];
   launchTypes: string[];
   networkModes: string[];
   secrets: ISecretDescriptor[];
@@ -147,6 +147,7 @@ export interface IEcsServerGroupCommand extends IServerGroupCommand {
   serviceDiscoveryAssociations: IEcsServiceDiscoveryRegistryAssociation[];
   useTaskDefinitionArtifact: boolean;
 
+  useDefaultCapacityProviders: boolean;
   capacityProviderStrategy: IEcsCapacityProviderStrategy[];
   ecsClusterName: string;
   subnetTypeChanged: (command: IEcsServerGroupCommand) => IServerGroupCommandResult;
@@ -276,7 +277,7 @@ export class EcsServerGroupConfigurationService {
         this.configureAvailableSubnetTypes(cmd);
         this.configureAvailableSecurityGroups(cmd);
         this.configureAvailableEcsClusters(cmd);
-        this.configureCapacityProvidersAndStrategy(cmd);
+        this.configureAvailableCapacityProviders(cmd);
         this.configureAvailableSecrets(cmd);
         this.configureAvailableServiceDiscoveryRegistries(cmd);
         this.configureAvailableImages(cmd);
@@ -287,17 +288,20 @@ export class EcsServerGroupConfigurationService {
       });
   }
 
-  public configureCapacityProvidersAndStrategy(command: IEcsServerGroupCommand): void {
+  public configureAvailableCapacityProviders(command: IEcsServerGroupCommand): void {
     this.$q.all({
       ecsDescribeCluster: this.ecsClusterReader.listDescribeClusters(command.credentials, command.region)
     }).then((result: Partial<IEcsServerGroupCommandBackingData>) => {
-      command.backingData.capacityProvidersAndStrategy = chain(result.ecsDescribeCluster)
-        .map((cluster) => this.mapCapacityProvidersAndStrategy(cluster))
+      command.backingData.availableCapacityProviders = chain(result.ecsDescribeCluster)
+        .map((cluster) => this.mapAvailableCapacityProviders(cluster))
         .value();
     });
+    command.backingData.availableCapacityProviders = chain(command.backingData.ecsDescribeCluster)
+      .map((cluster) => this.mapAvailableCapacityProviders(cluster))
+      .value();
   }
 
-  public mapCapacityProvidersAndStrategy(describeClusters: IEcsDescribeClusterResponse) : IEcsAvailableCapacityProviders {
+  public mapAvailableCapacityProviders(describeClusters: IEcsDescribeClusterResponse) : IEcsAvailableCapacityProviders {
     return {
       capacityProviders : describeClusters.capacityProviders,
       clusterArn : describeClusters.clusterArn,
@@ -609,7 +613,7 @@ export class EcsServerGroupConfigurationService {
         this.configureAvailableSecurityGroups(command);
         this.configureAvailableSecrets(command);
         this.configureAvailableServiceDiscoveryRegistries(command);
-        this.configureCapacityProvidersAndStrategy(command);
+        this.configureAvailableCapacityProviders(command);
       }
 
       return result;
@@ -636,7 +640,7 @@ export class EcsServerGroupConfigurationService {
         this.configureAvailableSecrets(command);
         this.configureAvailableServiceDiscoveryRegistries(command);
         this.configureAvailableRegions(command);
-        this.configureCapacityProvidersAndStrategy(command);
+        this.configureAvailableCapacityProviders(command);
 
         if (!some(backingData.filtered.regions, { name: command.region })) {
           command.region = null;
