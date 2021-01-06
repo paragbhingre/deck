@@ -117,7 +117,7 @@ export interface IEcsServiceDiscoveryRegistryAssociation {
   containerName: string;
 }
 
-export interface IEcsCapacityProviderStrategy {
+export interface IEcsCapacityProviderStrategyItem {
   capacityProvider: string;
   base: number;
   weight: number
@@ -148,7 +148,7 @@ export interface IEcsServerGroupCommand extends IServerGroupCommand {
   useTaskDefinitionArtifact: boolean;
 
   useDefaultCapacityProviders: boolean;
-  capacityProviderStrategy: IEcsCapacityProviderStrategy[];
+  capacityProviderStrategy: IEcsCapacityProviderStrategyItem[];
   ecsClusterName: string;
   subnetTypeChanged: (command: IEcsServerGroupCommand) => IServerGroupCommandResult;
   placementStrategyNameChanged: (command: IEcsServerGroupCommand) => IServerGroupCommandResult;

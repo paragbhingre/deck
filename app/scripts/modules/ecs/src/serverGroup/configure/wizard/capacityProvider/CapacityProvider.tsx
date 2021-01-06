@@ -3,19 +3,19 @@ import { module } from 'angular';
 import { react2angular } from 'react2angular';
 import { HelpField, withErrorBoundary, TetheredSelect } from  '@spinnaker/core';
 import {Option} from "react-select";
-import {IEcsCapacityProviderStrategy, IEcsServerGroupCommand} from '../../serverGroupConfiguration.service';
+import {IEcsCapacityProviderStrategyItem, IEcsServerGroupCommand} from '../../serverGroupConfiguration.service';
 import {IEcsAvailableCapacityProviders} from "../../../../ecsCluster/IEcsAvailableCapacityProviders";
 
 
-export interface ICapacityProviderProps {
+export interface IEcsCapacityProviderProps {
   command: IEcsServerGroupCommand;
   notifyAngular: (key: string, value: any) => void;
   configureCommand: (query: string) => PromiseLike<void>;
   capacityProviderState: () => void;
 }
 
-interface ICapacityProviderState {
-  capacityProviderStrategy: IEcsCapacityProviderStrategy[],
+interface IEcsCapacityProviderState {
+  capacityProviderStrategy: IEcsCapacityProviderStrategyItem[],
   availableCapacityProviders: IEcsAvailableCapacityProviders[],
   capacityProviderForSelectedCluster: IEcsAvailableCapacityProviders,
   capacityProviderState: {},
@@ -26,20 +26,24 @@ interface ICapacityProviderState {
   useDefaultCapacityProviders: boolean
 }
 
-class CapacityProvider extends React.Component<ICapacityProviderProps, ICapacityProviderState>{
-  constructor(props: ICapacityProviderProps) {
+class CapacityProvider extends React.Component<IEcsCapacityProviderProps, IEcsCapacityProviderState>{
+  constructor(props: IEcsCapacityProviderProps) {
     super(props);
     const cmd = this.props.command;
+
+    const targetCapacityProvider = cmd && cmd.backingData && cmd.backingData.availableCapacityProviders ? cmd.backingData.availableCapacityProviders.filter(function (el) {
+      return el.clusterName == (cmd.ecsClusterName);
+    })[0] : {} as IEcsAvailableCapacityProviders;
 
     this.state = {
       capacityProviderState: this.props.capacityProviderState,
       availableCapacityProviders: cmd.backingData && cmd.backingData.availableCapacityProviders ? cmd.backingData.availableCapacityProviders : [],
-      capacityProviderForSelectedCluster: {} as IEcsAvailableCapacityProviders,
+      capacityProviderForSelectedCluster: targetCapacityProvider,
       capacityProviderNames: [],
       ecsClusterName: cmd.ecsClusterName,
       credentials: cmd.credentials,
       region: cmd.region,
-      useDefaultCapacityProviders: cmd.useDefaultCapacityProviders || cmd.capacityProviderStrategy && cmd.capacityProviderStrategy.length == 0,
+      useDefaultCapacityProviders: cmd.useDefaultCapacityProviders || targetCapacityProvider.defaultCapacityProviderStrategy && targetCapacityProvider.defaultCapacityProviderStrategy.length > 0,
       capacityProviderStrategy: cmd.capacityProviderStrategy.length > 0 ? cmd.capacityProviderStrategy : []
     };
   }
@@ -63,6 +67,7 @@ public componentDidMount() {
         capacityProviderForSelectedCluster: targetCapacityProvider,
       });
       this.props.notifyAngular('capacityProviderStrategy', this.state.capacityProviderStrategy);
+      this.props.notifyAngular('useDefaultCapacityProviders', this.state.useDefaultCapacityProviders);
     });
   }
 
