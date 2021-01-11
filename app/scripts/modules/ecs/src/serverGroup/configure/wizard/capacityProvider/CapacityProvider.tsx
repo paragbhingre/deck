@@ -23,7 +23,8 @@ interface IEcsCapacityProviderState {
   ecsClusterName: string,
   credentials: string,
   region: string,
-  useDefaultCapacityProviders: boolean
+  useDefaultCapacityProviders: boolean,
+  capacityProviderLoadedFlag: boolean;
 }
 
 class CapacityProvider extends React.Component<IEcsCapacityProviderProps, IEcsCapacityProviderState>{
@@ -33,7 +34,7 @@ class CapacityProvider extends React.Component<IEcsCapacityProviderProps, IEcsCa
 
     const targetCapacityProvider = cmd && cmd.backingData && cmd.backingData.availableCapacityProviders ? cmd.backingData.availableCapacityProviders.filter(function (el) {
       return el.clusterName == (cmd.ecsClusterName);
-    })[0] : {} as IEcsAvailableCapacityProviders;
+    })[0] : {} as IEcsAvailableCapacityProviders; // change so that [0] is not being used
 
     this.state = {
       capacityProviderState: this.props.capacityProviderState,
@@ -44,7 +45,8 @@ class CapacityProvider extends React.Component<IEcsCapacityProviderProps, IEcsCa
       credentials: cmd.credentials,
       region: cmd.region,
       useDefaultCapacityProviders: cmd.useDefaultCapacityProviders || targetCapacityProvider.defaultCapacityProviderStrategy && targetCapacityProvider.defaultCapacityProviderStrategy.length > 0,
-      capacityProviderStrategy: cmd.capacityProviderStrategy.length > 0 ? cmd.capacityProviderStrategy : []
+      capacityProviderStrategy: cmd.capacityProviderStrategy.length > 0 ? cmd.capacityProviderStrategy : [],
+      capacityProviderLoadedFlag: false
     };
   }
 
@@ -54,7 +56,7 @@ public componentDidMount() {
 
       const targetCapacityProvider = cmd && cmd.backingData && cmd.backingData.availableCapacityProviders ? cmd.backingData.availableCapacityProviders.filter(function (el) {
         return el.clusterName == (cmd.ecsClusterName);
-      })[0] : {} as IEcsAvailableCapacityProviders;
+      })[0] : {} as IEcsAvailableCapacityProviders; // change so that [0] is not being used
 
       const defaultCapacityProviderStrategy = targetCapacityProvider && targetCapacityProvider.defaultCapacityProviderStrategy
       && targetCapacityProvider.defaultCapacityProviderStrategy.length > 0 ? targetCapacityProvider.defaultCapacityProviderStrategy : [];
@@ -68,12 +70,20 @@ public componentDidMount() {
       });
       this.props.notifyAngular('capacityProviderStrategy', this.state.capacityProviderStrategy);
       this.props.notifyAngular('useDefaultCapacityProviders', this.state.useDefaultCapacityProviders);
+      this.setState({capacityProviderLoadedFlag: true});
     });
   }
+
+/*  componentDidUpdate() {
+    if (this.state.ecsClusterName !== this.props.command.ecsClusterName) {
+      this.setState({ecsClusterName: this.props.command.ecsClusterName});
+    }
+  }*/
 
   private addCapacityProviderStrategy = () => {
     const capacityProviderStrategy = this.state.capacityProviderStrategy;
     capacityProviderStrategy.push({ capacityProvider: '', base: null, weight: null});
+    this.props.notifyAngular('capacityProviderStrategy', capacityProviderStrategy);
     this.setState({ capacityProviderStrategy : capacityProviderStrategy });
   };
 
@@ -85,40 +95,43 @@ public componentDidMount() {
   }
 
   private updateCapacityProviderName = (index: number, targetCapacityProviderName: any) => {
-    const capacityProviderStartegy = this.state.capacityProviderStrategy;
-    const targetCapacityProviderStrategy = capacityProviderStartegy[index];
+    const capacityProviderStrategy = this.state.capacityProviderStrategy;
+    const targetCapacityProviderStrategy = capacityProviderStrategy[index];
     targetCapacityProviderStrategy.capacityProvider = targetCapacityProviderName.label;
-    this.props.notifyAngular('capacityProviderStrategy', capacityProviderStartegy);
-    this.setState({ capacityProviderStrategy: capacityProviderStartegy });
+    this.props.notifyAngular('capacityProviderStrategy', capacityProviderStrategy);
+    this.setState({ capacityProviderStrategy: capacityProviderStrategy });
   };
 
   private updateCapacityProviderBase = (index: number, targetCapacityProviderBase: number) => {
-    const capacityProviderStartegy = this.state.capacityProviderStrategy;
-    const targetCapacityProviderStrategy = capacityProviderStartegy[index];
+    const capacityProviderStrategy = this.state.capacityProviderStrategy;
+    const targetCapacityProviderStrategy = capacityProviderStrategy[index];
     targetCapacityProviderStrategy.base = targetCapacityProviderBase;
-    this.props.notifyAngular('capacityProviderStrategy', capacityProviderStartegy);
-    this.setState({ capacityProviderStrategy: capacityProviderStartegy });
+    this.props.notifyAngular('capacityProviderStrategy', capacityProviderStrategy);
+    this.setState({ capacityProviderStrategy: capacityProviderStrategy });
   };
 
   private updateCapacityProviderWeight = (index: number, targetCapacityProviderWeight: number) => {
-    const capacityProviderStartegy = this.state.capacityProviderStrategy;
-    const targetCapacityProviderStrategy = capacityProviderStartegy[index];
+    const capacityProviderStrategy = this.state.capacityProviderStrategy;
+    const targetCapacityProviderStrategy = capacityProviderStrategy[index];
     targetCapacityProviderStrategy.weight= targetCapacityProviderWeight;
-    this.props.notifyAngular('capacityProviderStrategy', capacityProviderStartegy);
-    this.setState({ capacityProviderStrategy: capacityProviderStartegy });
+    this.props.notifyAngular('capacityProviderStrategy', capacityProviderStrategy);
+    this.setState({ capacityProviderStrategy: capacityProviderStrategy });
   };
 
   private updateCapacityProviderStrategy = (targetCapacityProviderType: string) => {
     const useDefaultCapacityProviders = targetCapacityProviderType == 'defaultCapacityProvider';
     this.setState({useDefaultCapacityProviders : useDefaultCapacityProviders});
+    this.props.notifyAngular("useDefaultCapacityProviders", useDefaultCapacityProviders);
 
     if (useDefaultCapacityProviders) {
+      this.setState({capacityProviderStrategy : []});
+      this.props.notifyAngular('capacityProviderStrategy', []);
       if (this.state.capacityProviderForSelectedCluster.defaultCapacityProviderStrategy.length > 0)
        this.setState({capacityProviderStrategy : this.state.capacityProviderForSelectedCluster.defaultCapacityProviderStrategy});
        this.props.notifyAngular('capacityProviderStrategy', this.state.capacityProviderForSelectedCluster.defaultCapacityProviderStrategy );
-    } else if (!useDefaultCapacityProviders) {
+    } else {
       this.setState({capacityProviderStrategy : []});
-      this.props.notifyAngular('capacityProviderStrategy', {});
+      this.props.notifyAngular('capacityProviderStrategy', []);
       if (this.state.capacityProviderForSelectedCluster.capacityProviders.length > 0) {
         this.setState({capacityProviderNames : this.state.capacityProviderForSelectedCluster.capacityProviders.map((capacityProviderNames) => {
             return { label: `${capacityProviderNames}`, value: capacityProviderNames };
@@ -139,6 +152,7 @@ public componentDidMount() {
     const updateCapacityProviderStrategy = this.updateCapacityProviderStrategy;
     const capacityProviderStrategy = this.state.capacityProviderStrategy;
     const useDefaultCapacityProviders = this.state.useDefaultCapacityProviders;
+    const capacityProviderLoadedFlag = this.state.capacityProviderLoadedFlag;
 
     const capacityProviderNames = this.state.capacityProviderForSelectedCluster.capacityProviders ? this.state.capacityProviderForSelectedCluster.capacityProviders.map((capacityProviderNames) => {
       return { label: `${capacityProviderNames}`, value: capacityProviderNames };
@@ -241,7 +255,7 @@ public componentDidMount() {
             Use custom (Advanced)
           </label>
         </div>
-
+        {capacityProviderLoadedFlag ? (
         <table className="table table-condensed packed tags">
           <thead>
           <th style={{ width: '50%' }}> Provider name <HelpField id="ecs.capacityProviderName" /></th>
@@ -256,10 +270,17 @@ public componentDidMount() {
             <td colSpan={4}>{newCapacityProviderStrategy}</td>
           </tr>
           </tfoot>
-        </table>
-
+        </table>) : (
+          <div className="load medium">
+            <div className="message">Loading capacity providers...</div>
+            <div className="bars">
+              <div className="bar"></div>
+              <div className="bar"></div>
+              <div className="bar"></div>
+            </div>
+          </div>
+          )}
       </div>
-
     );
   }
 }
