@@ -11,18 +11,13 @@ export interface IEcsCapacityProviderProps {
   command: IEcsServerGroupCommand;
   notifyAngular: (key: string, value: any) => void;
   configureCommand: (query: string) => PromiseLike<void>;
-  capacityProviderState: () => void;
 }
 
 interface IEcsCapacityProviderState {
   capacityProviderStrategy: IEcsCapacityProviderStrategyItem[],
   availableCapacityProviders: IEcsAvailableCapacityProviders[],
-  capacityProviderForSelectedCluster: IEcsAvailableCapacityProviders,
-  capacityProviderState: {},
-  capacityProviderNames: {},
+  availableCapacityProvidersForSelectedCluster: IEcsAvailableCapacityProviders,
   ecsClusterName: string,
-  credentials: string,
-  region: string,
   useDefaultCapacityProviders: boolean,
   capacityProviderLoadedFlag: boolean;
 }
@@ -37,48 +32,41 @@ class CapacityProvider extends React.Component<IEcsCapacityProviderProps, IEcsCa
     })[0] : {} as IEcsAvailableCapacityProviders; // change so that [0] is not being used
 
     this.state = {
-      capacityProviderState: this.props.capacityProviderState,
       availableCapacityProviders: cmd.backingData && cmd.backingData.availableCapacityProviders ? cmd.backingData.availableCapacityProviders : [],
-      capacityProviderForSelectedCluster: targetCapacityProvider,
-      capacityProviderNames: [],
+      availableCapacityProvidersForSelectedCluster: targetCapacityProvider,
       ecsClusterName: cmd.ecsClusterName,
-      credentials: cmd.credentials,
-      region: cmd.region,
-      useDefaultCapacityProviders: cmd.useDefaultCapacityProviders || targetCapacityProvider.defaultCapacityProviderStrategy && targetCapacityProvider.defaultCapacityProviderStrategy.length > 0,
+      useDefaultCapacityProviders: cmd.useDefaultCapacityProviders || targetCapacityProvider && targetCapacityProvider.defaultCapacityProviderStrategy && targetCapacityProvider.defaultCapacityProviderStrategy.length > 0,
       capacityProviderStrategy: cmd.capacityProviderStrategy.length > 0 ? cmd.capacityProviderStrategy : [],
       capacityProviderLoadedFlag: false
     };
   }
 
+  public componentWillReceiveProps(nextProps:IEcsCapacityProviderProps){
+    if(nextProps.command.ecsClusterName){
+      alert(nextProps);
+    }
+  }
+
 public componentDidMount() {
     this.props.configureCommand('1').then(() => {
       const cmd = this.props.command;
-
+      const useDefaultCapacityProviders = this.state.useDefaultCapacityProviders;
       const targetCapacityProvider = cmd && cmd.backingData && cmd.backingData.availableCapacityProviders ? cmd.backingData.availableCapacityProviders.filter(function (el) {
         return el.clusterName == (cmd.ecsClusterName);
       })[0] : {} as IEcsAvailableCapacityProviders; // change so that [0] is not being used
-
       const defaultCapacityProviderStrategy = targetCapacityProvider && targetCapacityProvider.defaultCapacityProviderStrategy
       && targetCapacityProvider.defaultCapacityProviderStrategy.length > 0 ? targetCapacityProvider.defaultCapacityProviderStrategy : [];
-
-      const useDefaultCapacityProviders = this.state.useDefaultCapacityProviders;
 
       this.setState({
         availableCapacityProviders: cmd.backingData.availableCapacityProviders,
         capacityProviderStrategy: useDefaultCapacityProviders && defaultCapacityProviderStrategy.length > 0 ? defaultCapacityProviderStrategy : this.state.capacityProviderStrategy,
-        capacityProviderForSelectedCluster: targetCapacityProvider,
+        availableCapacityProvidersForSelectedCluster: targetCapacityProvider,
       });
       this.props.notifyAngular('capacityProviderStrategy', this.state.capacityProviderStrategy);
       this.props.notifyAngular('useDefaultCapacityProviders', this.state.useDefaultCapacityProviders);
       this.setState({capacityProviderLoadedFlag: true});
     });
   }
-
-/*  componentDidUpdate() {
-    if (this.state.ecsClusterName !== this.props.command.ecsClusterName) {
-      this.setState({ecsClusterName: this.props.command.ecsClusterName});
-    }
-  }*/
 
   private addCapacityProviderStrategy = () => {
     const capacityProviderStrategy = this.state.capacityProviderStrategy;
@@ -126,19 +114,14 @@ public componentDidMount() {
     if (useDefaultCapacityProviders) {
       this.setState({capacityProviderStrategy : []});
       this.props.notifyAngular('capacityProviderStrategy', []);
-      if (this.state.capacityProviderForSelectedCluster.defaultCapacityProviderStrategy.length > 0)
-       this.setState({capacityProviderStrategy : this.state.capacityProviderForSelectedCluster.defaultCapacityProviderStrategy});
-       this.props.notifyAngular('capacityProviderStrategy', this.state.capacityProviderForSelectedCluster.defaultCapacityProviderStrategy );
+      if (this.state.availableCapacityProvidersForSelectedCluster.defaultCapacityProviderStrategy.length > 0){
+        this.setState({capacityProviderStrategy : this.state.availableCapacityProvidersForSelectedCluster.defaultCapacityProviderStrategy});
+        this.props.notifyAngular('capacityProviderStrategy', this.state.availableCapacityProvidersForSelectedCluster.defaultCapacityProviderStrategy );
+      }
     } else {
       this.setState({capacityProviderStrategy : []});
       this.props.notifyAngular('capacityProviderStrategy', []);
-      if (this.state.capacityProviderForSelectedCluster.capacityProviders.length > 0) {
-        this.setState({capacityProviderNames : this.state.capacityProviderForSelectedCluster.capacityProviders.map((capacityProviderNames) => {
-            return { label: `${capacityProviderNames}`, value: capacityProviderNames };
-          })});
-      }
     }
-
   };
 
 
@@ -154,7 +137,8 @@ public componentDidMount() {
     const useDefaultCapacityProviders = this.state.useDefaultCapacityProviders;
     const capacityProviderLoadedFlag = this.state.capacityProviderLoadedFlag;
 
-    const capacityProviderNames = this.state.capacityProviderForSelectedCluster.capacityProviders ? this.state.capacityProviderForSelectedCluster.capacityProviders.map((capacityProviderNames) => {
+
+    const capacityProviderNames = this.state.availableCapacityProvidersForSelectedCluster && this.state.availableCapacityProvidersForSelectedCluster.capacityProviders ? this.state.availableCapacityProvidersForSelectedCluster.capacityProviders.map((capacityProviderNames) => {
       return { label: `${capacityProviderNames}`, value: capacityProviderNames };
     }) : [];
 
@@ -204,20 +188,20 @@ public componentDidMount() {
               onChange={(e) => updateCapacityProviderWeight(index, e.target.valueAsNumber)}
             />
           </td>
-          <td>
+          {!useDefaultCapacityProviders ? ( <td>
             <div className="form-control-static">
               <a className="btn-link sm-label" onClick={() => removeCapacityProviderStrategy(index)}>
                 <span className="glyphicon glyphicon-trash" />
                 <span className="sr-only">Remove</span>
               </a>
             </div>
-          </td>
+          </td> ) : ''}
         </tr>
       );
     }) : useDefaultCapacityProviders && this.state.capacityProviderStrategy.length == 0 ?  ( <span style= {{ color : '#c00', position: 'absolute' }}>The cluster does not have a default capacity provider strategy defined. Set a default capacity provider strategy or use a custom strategy.</span> )
     : '';
 
-    const newCapacityProviderStrategy =   this.state.ecsClusterName && this.state.credentials && this.state.region && !useDefaultCapacityProviders ? (
+    const newCapacityProviderStrategy =   this.state.ecsClusterName && this.props.command.credentials && this.props.command.region && !useDefaultCapacityProviders ? (
       <button className="btn btn-block btn-sm add-new" onClick={addCapacityProviderStrategy}>
         <span className="glyphicon glyphicon-plus-sign" />
         Add New Capacity Provider
@@ -258,13 +242,13 @@ public componentDidMount() {
         {capacityProviderLoadedFlag ? (
         <table className="table table-condensed packed tags">
           <thead>
-          <th style={{ width: '50%' }}> Provider name <HelpField id="ecs.capacityProviderName" /></th>
-          <th style={{ width: '25%' }}> Base <HelpField id="ecs.capacityProviderBase" /></th>
-          <th style={{ width: '25%' }}>Weight <HelpField id="ecs.capacityProviderWeight" /></th>
+          <tr>
+            <th style={{ width: '50%' }}>Provider name<HelpField id="ecs.capacityProviderName" /></th>
+            <th style={{ width: '25%' }}>Base<HelpField id="ecs.capacityProviderBase" /></th>
+            <th style={{ width: '25%' }}>Weight<HelpField id="ecs.capacityProviderWeight" /></th>
+          </tr>
           </thead>
-          <tbody>
-          {capacityProviderInputs}
-          </tbody>
+          <tbody>{capacityProviderInputs}</tbody>
           <tfoot>
           <tr>
             <td colSpan={4}>{newCapacityProviderStrategy}</td>
@@ -291,6 +275,5 @@ module(CAPACITY_PROVIDER_REACT, []).component(
   react2angular(withErrorBoundary(CapacityProvider, 'capacityProviderReact'), [
     'command',
     'notifyAngular',
-    'configureCommand',
-    'capacityProviderState']),
+    'configureCommand',]),
 );
