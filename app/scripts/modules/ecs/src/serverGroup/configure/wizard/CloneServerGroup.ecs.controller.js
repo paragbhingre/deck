@@ -164,6 +164,7 @@ module(ECS_SERVERGROUP_CONFIGURE_WIZARD_CLONESERVERGROUP_ECS_CONTROLLER, [
         initializeCommand();
         initializeSelectOptions();
         initializeWatches();
+        /*changeCluster();*/
       });
     }
 
@@ -177,12 +178,31 @@ module(ECS_SERVERGROUP_CONFIGURE_WIZARD_CLONESERVERGROUP_ECS_CONTROLLER, [
       );
       $scope.$watch('command.stack', () => $scope.command.clusterChanged($scope.command));
       $scope.$watch('command.freeFormDetails', () => $scope.command.clusterChanged($scope.command));
+      $scope.$watch('command.ecsClusterName', () => handleClusterChangeEvent());
+    }
+
+    function handleClusterChangeEvent(){
+
+      $scope.capacityProviderState.useCapacityProviders = '';
+      $scope.command.useDefaultCapacityProviders = false;
+      $scope.command.capacityProviderStrategy = [];git
+      $scope.command.clusterChanged($scope.command);
+
     }
 
     function initializeSelectOptions() {
       processCommandUpdateResult($scope.command.credentialsChanged(serverGroupCommand));
       processCommandUpdateResult($scope.command.regionChanged(serverGroupCommand));
     }
+
+    /*function changeCluster(){
+      $scope.$on('clusterChanged', function(event, args) {
+        $scope.capacityProviderState.useCapacityProviders = '';
+        $scope.command.useDefaultCapacityProviders = false;
+        $scope.command.capacityProviderStrategy = [];
+        $scope.command.ecsClusterName = args
+      });
+    }*/
 
     function createResultProcessor(method) {
       return function () {

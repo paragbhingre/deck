@@ -1,6 +1,5 @@
-export interface IEcsAvailableCapacityProviders {
+export interface IEcsAvailableCapacityProviderDetails {
   capacityProviders : string[],
-  clusterArn : string,
   clusterName : string,
   defaultCapacityProviderStrategy : IEcsDefaultCapacityProviderStrategyItem[],
 }
