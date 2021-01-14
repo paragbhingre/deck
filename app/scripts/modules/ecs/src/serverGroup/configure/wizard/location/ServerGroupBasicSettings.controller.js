@@ -41,7 +41,7 @@ angular
       $scope.clusterChanged = function ($clusterName){
         $scope.$emit('clusterChanged', $clusterName);
       };
-      $scope.clusterChanged.$inject = ['$scope'];21``
+      $scope.clusterChanged.$inject = ['$scope'];
 
     },
   ]);

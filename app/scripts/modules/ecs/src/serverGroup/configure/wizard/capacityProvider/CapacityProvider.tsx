@@ -4,7 +4,6 @@ import { react2angular } from 'react2angular';
 import { HelpField, withErrorBoundary, TetheredSelect } from  '@spinnaker/core';
 import {Option} from "react-select";
 import {IEcsCapacityProviderStrategyItem, IEcsServerGroupCommand} from '../../serverGroupConfiguration.service';
-import {IEcsAvailableCapacityProviders} from "../../../../ecsCluster/IEcsAvailableCapacityProviders";
 
 
 export interface IEcsCapacityProviderProps {
@@ -15,8 +14,8 @@ export interface IEcsCapacityProviderProps {
 
 interface IEcsCapacityProviderState {
   capacityProviderStrategy: IEcsCapacityProviderStrategyItem[],
-  availableCapacityProviders: IEcsAvailableCapacityProviders[],
-  availableCapacityProvidersForSelectedCluster: IEcsAvailableCapacityProviders,
+  defaultCapacityProviderStrategy: IEcsCapacityProviderStrategyItem[],
+  availableCapacityProviders: string[],
   ecsClusterName: string,
   useDefaultCapacityProviders: boolean,
   capacityProviderLoadedFlag: boolean;
@@ -27,40 +26,25 @@ class CapacityProvider extends React.Component<IEcsCapacityProviderProps, IEcsCa
     super(props);
     const cmd = this.props.command;
 
-    const targetCapacityProvider = cmd && cmd.backingData && cmd.backingData.availableCapacityProviders ? cmd.backingData.availableCapacityProviders.filter(function (el) {
-      return el.clusterName == (cmd.ecsClusterName);
-    })[0] : {} as IEcsAvailableCapacityProviders; // change so that [0] is not being used
-
     this.state = {
-      availableCapacityProviders: cmd.backingData && cmd.backingData.availableCapacityProviders ? cmd.backingData.availableCapacityProviders : [],
-      availableCapacityProvidersForSelectedCluster: targetCapacityProvider,
+      availableCapacityProviders: cmd.backingData && cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.availableCapacityProviders && cmd.backingData.filtered.availableCapacityProviders.length > 0 ? cmd.backingData.filtered.availableCapacityProviders : [],
+      defaultCapacityProviderStrategy: cmd.backingData && cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy && cmd.backingData.filtered.defaultCapacityProviderStrategy.length > 0 ? cmd.backingData.filtered.defaultCapacityProviderStrategy : [],
       ecsClusterName: cmd.ecsClusterName,
-      useDefaultCapacityProviders: cmd.useDefaultCapacityProviders || targetCapacityProvider && targetCapacityProvider.defaultCapacityProviderStrategy && targetCapacityProvider.defaultCapacityProviderStrategy.length > 0,
+      useDefaultCapacityProviders: cmd.useDefaultCapacityProviders || cmd.capacityProviderStrategy && cmd.capacityProviderStrategy.length == 0,
       capacityProviderStrategy: cmd.capacityProviderStrategy.length > 0 ? cmd.capacityProviderStrategy : [],
       capacityProviderLoadedFlag: false
     };
-  }
-
-  public componentWillReceiveProps(nextProps:IEcsCapacityProviderProps){
-    if(nextProps.command.ecsClusterName){
-      alert(nextProps);
-    }
   }
 
 public componentDidMount() {
     this.props.configureCommand('1').then(() => {
       const cmd = this.props.command;
       const useDefaultCapacityProviders = this.state.useDefaultCapacityProviders;
-      const targetCapacityProvider = cmd && cmd.backingData && cmd.backingData.availableCapacityProviders ? cmd.backingData.availableCapacityProviders.filter(function (el) {
-        return el.clusterName == (cmd.ecsClusterName);
-      })[0] : {} as IEcsAvailableCapacityProviders; // change so that [0] is not being used
-      const defaultCapacityProviderStrategy = targetCapacityProvider && targetCapacityProvider.defaultCapacityProviderStrategy
-      && targetCapacityProvider.defaultCapacityProviderStrategy.length > 0 ? targetCapacityProvider.defaultCapacityProviderStrategy : [];
 
       this.setState({
-        availableCapacityProviders: cmd.backingData.availableCapacityProviders,
-        capacityProviderStrategy: useDefaultCapacityProviders && defaultCapacityProviderStrategy.length > 0 ? defaultCapacityProviderStrategy : this.state.capacityProviderStrategy,
-        availableCapacityProvidersForSelectedCluster: targetCapacityProvider,
+        availableCapacityProviders: cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.availableCapacityProviders.length > 0  ? cmd.backingData.filtered.availableCapacityProviders : [],
+        defaultCapacityProviderStrategy: cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy && cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy.length > 0 ? cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy : [],
+        capacityProviderStrategy: useDefaultCapacityProviders && cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy && cmd.backingData.filtered.defaultCapacityProviderStrategy.length > 0  ? cmd.backingData.filtered.defaultCapacityProviderStrategy : this.state.capacityProviderStrategy,
       });
       this.props.notifyAngular('capacityProviderStrategy', this.state.capacityProviderStrategy);
       this.props.notifyAngular('useDefaultCapacityProviders', this.state.useDefaultCapacityProviders);
@@ -114,9 +98,9 @@ public componentDidMount() {
     if (useDefaultCapacityProviders) {
       this.setState({capacityProviderStrategy : []});
       this.props.notifyAngular('capacityProviderStrategy', []);
-      if (this.state.availableCapacityProvidersForSelectedCluster.defaultCapacityProviderStrategy.length > 0){
-        this.setState({capacityProviderStrategy : this.state.availableCapacityProvidersForSelectedCluster.defaultCapacityProviderStrategy});
-        this.props.notifyAngular('capacityProviderStrategy', this.state.availableCapacityProvidersForSelectedCluster.defaultCapacityProviderStrategy );
+      if (this.state.defaultCapacityProviderStrategy.length > 0){
+        this.setState({capacityProviderStrategy : this.state.defaultCapacityProviderStrategy});
+        this.props.notifyAngular('capacityProviderStrategy', this.state.defaultCapacityProviderStrategy );
       }
     } else {
       this.setState({capacityProviderStrategy : []});
@@ -138,9 +122,9 @@ public componentDidMount() {
     const capacityProviderLoadedFlag = this.state.capacityProviderLoadedFlag;
 
 
-    const capacityProviderNames = this.state.availableCapacityProvidersForSelectedCluster && this.state.availableCapacityProvidersForSelectedCluster.capacityProviders ? this.state.availableCapacityProvidersForSelectedCluster.capacityProviders.map((capacityProviderNames) => {
+    const capacityProviderNames = this.state.availableCapacityProviders &&  this.state.availableCapacityProviders.length > 0 ?  this.state.availableCapacityProviders.map((capacityProviderNames) => {
       return { label: `${capacityProviderNames}`, value: capacityProviderNames };
-    }) : [];
+    }) : []
 
     const capacityProviderInputs = capacityProviderStrategy.length > 0 ? capacityProviderStrategy.map(function (mapping, index) {
       return (
@@ -148,6 +132,7 @@ public componentDidMount() {
           {useDefaultCapacityProviders ? (
             <td>
               <input
+                data-test-id={"ServerGroup.customCapacityProvider.name." + index}
                 type="string"
                 className="form-control input-sm no-spel"
                 required={true}
@@ -156,7 +141,7 @@ public componentDidMount() {
               />
             </td>
           ) : (
-            <td>
+            <td >
               <TetheredSelect
                 placeholder="Select capacity provider"
                 options={capacityProviderNames}
@@ -165,11 +150,13 @@ public componentDidMount() {
                   updateCapacityProviderName(index, e as Option<string>)
                 }}
                 clearable={false}
+                data-test-id={"ServerGroup.customCapacityProvider.name." + index}
               />
             </td>
           )}
           <td>
             <input
+              data-test-id={"ServerGroup.capacityProvider.base." + index}
               disabled= {useDefaultCapacityProviders}
               type="number"
               className="form-control input-sm no-spel"
@@ -180,6 +167,7 @@ public componentDidMount() {
           </td>
           <td>
             <input
+              data-test-id={"ServerGroup.capacityProvider.weight." + index}
               disabled= {useDefaultCapacityProviders}
               type="number"
               className="form-control input-sm no-spel"
@@ -198,11 +186,11 @@ public componentDidMount() {
           </td> ) : ''}
         </tr>
       );
-    }) : useDefaultCapacityProviders && this.state.capacityProviderStrategy.length == 0 ?  ( <span style= {{ color : '#c00', position: 'absolute' }}>The cluster does not have a default capacity provider strategy defined. Set a default capacity provider strategy or use a custom strategy.</span> )
+    }) : useDefaultCapacityProviders && this.state.capacityProviderStrategy.length == 0 ?  ( <span data-test-id="ServerGroup.capacityProviders.default.error" style= {{ color : '#c00', position: 'absolute' }}>The cluster does not have a default capacity provider strategy defined. Set a default capacity provider strategy or use a custom strategy.</span> )
     : '';
 
     const newCapacityProviderStrategy =   this.state.ecsClusterName && this.props.command.credentials && this.props.command.region && !useDefaultCapacityProviders ? (
-      <button className="btn btn-block btn-sm add-new" onClick={addCapacityProviderStrategy}>
+      <button data-test-id="ServerGroup.addCapacityProvider" className="btn btn-block btn-sm add-new" onClick={addCapacityProviderStrategy}>
         <span className="glyphicon glyphicon-plus-sign" />
         Add New Capacity Provider
     </button>
@@ -218,7 +206,7 @@ public componentDidMount() {
         <div className="radio">
           <label>
             <input
-              data-test-id="CapacityProviders.default"
+              data-test-id="ServerGroup.capacityProviders.default"
               type="radio"
               checked={useDefaultCapacityProviders}
               onClick={() => updateCapacityProviderStrategy("defaultCapacityProvider")}
@@ -230,7 +218,7 @@ public componentDidMount() {
         <div className="radio">
           <label>
             <input
-              data-test-id="CapacityProviders.custom"
+              data-test-id="ServerGroup.capacityProviders.custom"
               type="radio"
               checked= {!useDefaultCapacityProviders}
               onClick={() => updateCapacityProviderStrategy('customCapacityProvider')}
