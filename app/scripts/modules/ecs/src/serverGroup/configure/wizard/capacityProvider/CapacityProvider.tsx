@@ -42,8 +42,8 @@ public componentDidMount() {
       const useDefaultCapacityProviders = this.state.useDefaultCapacityProviders;
 
       this.setState({
-        availableCapacityProviders: cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.availableCapacityProviders.length > 0  ? cmd.backingData.filtered.availableCapacityProviders : [],
-        defaultCapacityProviderStrategy: cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy && cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy.length > 0 ? cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy : [],
+        availableCapacityProviders: cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.availableCapacityProviders && cmd.backingData.filtered.availableCapacityProviders.length > 0  ? cmd.backingData.filtered.availableCapacityProviders : [],
+        defaultCapacityProviderStrategy: cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy && cmd.backingData.filtered.defaultCapacityProviderStrategy.length > 0 ? cmd.backingData.filtered.defaultCapacityProviderStrategy : [],
         capacityProviderStrategy: useDefaultCapacityProviders && cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy && cmd.backingData.filtered.defaultCapacityProviderStrategy.length > 0  ? cmd.backingData.filtered.defaultCapacityProviderStrategy : this.state.capacityProviderStrategy,
       });
       this.props.notifyAngular('capacityProviderStrategy', this.state.capacityProviderStrategy);

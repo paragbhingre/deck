@@ -309,11 +309,13 @@ export class EcsServerGroupConfigurationService {
   }
 
   public configureAvailableCapacityProviders(command: IEcsServerGroupCommand): void {
-    const targetCapacityProviderDetails = command.backingData.capacityProviderDetails.
-    filter(cluster => cluster.clusterName === command.ecsClusterName)
-      .map((cluster) => this.mapAvailableCapacityProviderDetails(cluster));
-    command.backingData.filtered.availableCapacityProviders = targetCapacityProviderDetails[0].capacityProviders
-    command.backingData.filtered.defaultCapacityProviderStrategy = targetCapacityProviderDetails[0].defaultCapacityProviderStrategy
+    if(command.backingData.capacityProviderDetails.length > 0){
+      const targetCapacityProviderDetails = command.backingData.capacityProviderDetails.
+      filter(cluster => cluster.clusterName === command.ecsClusterName)
+        .map((cluster) => this.mapAvailableCapacityProviderDetails(cluster));
+      command.backingData.filtered.availableCapacityProviders = targetCapacityProviderDetails[0].capacityProviders
+      command.backingData.filtered.defaultCapacityProviderStrategy = targetCapacityProviderDetails[0].defaultCapacityProviderStrategy
+    }
   }
 
   public mapAvailableCapacityProviderDetails(describeClusters: IEcsAvailableCapacityProviders) : IEcsAvailableCapacityProviders {
@@ -629,7 +631,6 @@ export class EcsServerGroupConfigurationService {
         this.configureAvailableServiceDiscoveryRegistries(command);
         this.setAvailableCapacityProviders(command);
       }
-
       return result;
     };
 
@@ -641,6 +642,9 @@ export class EcsServerGroupConfigurationService {
 
     cmd.clusterChanged = (command: IEcsServerGroupCommand): void => {
       command.moniker = NameUtils.getMoniker(command.application, command.stack, command.freeFormDetails);
+      if(command.ecsClusterName){
+        this.configureAvailableCapacityProviders(command);
+      }
     };
 
     cmd.credentialsChanged = (command: IEcsServerGroupCommand): IServerGroupCommandResult => {
