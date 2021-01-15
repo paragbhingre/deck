@@ -38,8 +38,12 @@ import { IMetricAlarmDescriptor } from '../../metricAlarm/MetricAlarm';
 import { PlacementStrategyService } from '../../placementStrategy/placementStrategy.service';
 import { IPlacementStrategy } from '../../placementStrategy/IPlacementStrategy';
 import { IEcsClusterDescriptor } from '../../ecsCluster/IEcsCluster';
-import { IEcsDescribeClusterResponse } from '../../ecsCluster/IEcsDescribeClusterResponse';
-import { IEcsAvailableCapacityProviders } from '../../ecsCluster/IEcsAvailableCapacityProviders';
+import {
+  IEcsDefaultCapacityProviderStrategyItem,
+} from '../../ecsCluster/IEcsCapacityProvidersDetails';
+import {
+  IEcsCapacityProvidersDetails
+} from '../../ecsCluster/IEcsCapacityProvidersDetails';
 import { SecretReader } from '../../secrets/secret.read.service';
 import { ISecretDescriptor } from '../../secrets/ISecret';
 import { ServiceDiscoveryReader } from '../../serviceDiscovery/serviceDiscovery.read.service';
@@ -88,8 +92,7 @@ export interface IEcsServerGroupCommandBackingData extends IServerGroupCommandBa
   ecsClusters: IEcsClusterDescriptor[];
   iamRoles: IRoleDescriptor[];
   metricAlarms: IMetricAlarmDescriptor[];
-  capacityProviderDetails: IEcsAvailableCapacityProviders[];
-  ecsDescribeCluster: IEcsDescribeClusterResponse[];
+  capacityProviderDetails: IEcsCapacityProvidersDetails[];
   launchTypes: string[];
   networkModes: string[];
   secrets: ISecretDescriptor[];
@@ -302,23 +305,30 @@ export class EcsServerGroupConfigurationService {
     if(command.ecsClusterName == null || command.ecsClusterName.length == 0){
       command.backingData.filtered.availableCapacityProviders = [];
       command.backingData.filtered.defaultCapacityProviderStrategy = [];
-    }
-    if(command.ecsClusterName){
+    } else {
       this.configureAvailableCapacityProviders(command);
     }
   }
 
   public configureAvailableCapacityProviders(command: IEcsServerGroupCommand): void {
-    if(command.backingData.capacityProviderDetails.length > 0){
-      const targetCapacityProviderDetails = command.backingData.capacityProviderDetails.
-      filter(cluster => cluster.clusterName === command.ecsClusterName)
-        .map((cluster) => this.mapAvailableCapacityProviderDetails(cluster));
-      command.backingData.filtered.availableCapacityProviders = targetCapacityProviderDetails[0].capacityProviders
-      command.backingData.filtered.defaultCapacityProviderStrategy = targetCapacityProviderDetails[0].defaultCapacityProviderStrategy
-    }
+    command.backingData.filtered.availableCapacityProviders = chain(command.backingData.capacityProviderDetails)
+      .filter({
+        clusterName: command.ecsClusterName
+      })
+      .map(availableCPs => availableCPs.capacityProviders)
+      .flattenDeep<string>()
+      .value();
+
+    command.backingData.filtered.defaultCapacityProviderStrategy = chain(command.backingData.capacityProviderDetails)
+      .filter({
+        clusterName: command.ecsClusterName
+      })
+      .map(availableCPs => availableCPs.defaultCapacityProviderStrategy)
+      .flattenDeep<IEcsDefaultCapacityProviderStrategyItem>()
+      .value();
   }
 
-  public mapAvailableCapacityProviderDetails(describeClusters: IEcsAvailableCapacityProviders) : IEcsAvailableCapacityProviders {
+  public mapAvailableCapacityProviderDetails(describeClusters: IEcsCapacityProvidersDetails) : IEcsCapacityProvidersDetails {
     return {
       capacityProviders : describeClusters.capacityProviders,
       clusterName :describeClusters.clusterName,

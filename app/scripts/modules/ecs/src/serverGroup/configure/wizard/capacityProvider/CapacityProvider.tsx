@@ -27,8 +27,8 @@ class CapacityProvider extends React.Component<IEcsCapacityProviderProps, IEcsCa
     const cmd = this.props.command;
 
     this.state = {
-      availableCapacityProviders: cmd.backingData && cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.availableCapacityProviders && cmd.backingData.filtered.availableCapacityProviders.length > 0 ? cmd.backingData.filtered.availableCapacityProviders : [],
-      defaultCapacityProviderStrategy: cmd.backingData && cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy && cmd.backingData.filtered.defaultCapacityProviderStrategy.length > 0 ? cmd.backingData.filtered.defaultCapacityProviderStrategy : [],
+      availableCapacityProviders: cmd.backingData && cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.availableCapacityProviders ? cmd.backingData.filtered.availableCapacityProviders : [],
+      defaultCapacityProviderStrategy: cmd.backingData && cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy ? cmd.backingData.filtered.defaultCapacityProviderStrategy : [],
       ecsClusterName: cmd.ecsClusterName,
       useDefaultCapacityProviders: cmd.useDefaultCapacityProviders || cmd.capacityProviderStrategy && cmd.capacityProviderStrategy.length == 0,
       capacityProviderStrategy: cmd.capacityProviderStrategy.length > 0 ? cmd.capacityProviderStrategy : [],
@@ -40,15 +40,13 @@ public componentDidMount() {
     this.props.configureCommand('1').then(() => {
       const cmd = this.props.command;
       const useDefaultCapacityProviders = this.state.useDefaultCapacityProviders;
-
       this.setState({
-        availableCapacityProviders: cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.availableCapacityProviders && cmd.backingData.filtered.availableCapacityProviders.length > 0  ? cmd.backingData.filtered.availableCapacityProviders : [],
-        defaultCapacityProviderStrategy: cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy && cmd.backingData.filtered.defaultCapacityProviderStrategy.length > 0 ? cmd.backingData.filtered.defaultCapacityProviderStrategy : [],
-        capacityProviderStrategy: useDefaultCapacityProviders && cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy && cmd.backingData.filtered.defaultCapacityProviderStrategy.length > 0  ? cmd.backingData.filtered.defaultCapacityProviderStrategy : this.state.capacityProviderStrategy,
+        availableCapacityProviders: cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.availableCapacityProviders   ? cmd.backingData.filtered.availableCapacityProviders : [],
+        defaultCapacityProviderStrategy: cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy  ? cmd.backingData.filtered.defaultCapacityProviderStrategy : [],
+        capacityProviderStrategy: useDefaultCapacityProviders && cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy  ? cmd.backingData.filtered.defaultCapacityProviderStrategy : this.state.capacityProviderStrategy,
+        capacityProviderLoadedFlag: true,
       });
-      this.props.notifyAngular('capacityProviderStrategy', this.state.capacityProviderStrategy);
       this.props.notifyAngular('useDefaultCapacityProviders', this.state.useDefaultCapacityProviders);
-      this.setState({capacityProviderLoadedFlag: true});
     });
   }
 
