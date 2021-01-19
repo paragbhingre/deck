@@ -47,6 +47,7 @@ class EcsCapacityProvider extends React.Component<IEcsCapacityProviderProps, IEc
         capacityProviderLoadedFlag: true,
       });
       this.props.notifyAngular('useDefaultCapacityProviders', this.state.useDefaultCapacityProviders);
+      this.props.notifyAngular('capacityProviderStrategy', this.state.capacityProviderStrategy);
     });
   }
 

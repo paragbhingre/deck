@@ -634,7 +634,7 @@ export class EcsServerGroupConfigurationService {
         this.configureAvailableSecurityGroups(command);
         this.configureAvailableSecrets(command);
         this.configureAvailableServiceDiscoveryRegistries(command);
-        this.setAvailableCapacityProviders(command);
+        this.setCapacityProviderDetails(command);
       }
 
       return result;
@@ -661,7 +661,7 @@ export class EcsServerGroupConfigurationService {
         this.configureAvailableSecrets(command);
         this.configureAvailableServiceDiscoveryRegistries(command);
         this.configureAvailableRegions(command);
-        this.setAvailableCapacityProviders(command);
+        this.setCapacityProviderDetails(command);
 
         if (!some(backingData.filtered.regions, { name: command.region })) {
           command.region = null;
