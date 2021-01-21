@@ -24,6 +24,7 @@ interface IContainerState {
   dockerImages: IEcsDockerImage[];
   targetGroupsAvailable: string[];
   targetGroupMappings: IEcsTargetGroupMapping[];
+  dirtyTargetGroups: string [];
 }
 
 export class Container extends React.Component<IContainerProps, IContainerState> {
@@ -54,6 +55,7 @@ export class Container extends React.Component<IContainerProps, IContainerState>
     cmd.containerMappings = null;
 
     this.state = {
+      dirtyTargetGroups: cmd.viewState.dirty.targetGroups ? cmd.viewState.dirty.targetGroups : [],
       imageDescription: cmd.imageDescription ? cmd.imageDescription : this.getEmptyImageDescription(),
       computeUnits: cmd.computeUnits,
       reservedMemory: cmd.reservedMemory,
@@ -72,6 +74,7 @@ export class Container extends React.Component<IContainerProps, IContainerState>
       this.setState({
         dockerImages: this.props.command.backingData.filtered.images,
         targetGroupsAvailable: this.props.command.backingData.filtered.targetGroups,
+        dirtyTargetGroups: this.props.command.viewState.dirty.targetGroups ? this.props.command.viewState.dirty.targetGroups : [],
       });
     });
   }
@@ -152,6 +155,11 @@ export class Container extends React.Component<IContainerProps, IContainerState>
     this.setState({ targetGroupMappings: currentMappings });
   };
 
+  private updateDirtyTargetGroups = () => {
+    this.props.command.viewState.dirty.targetGroups = null;
+    this.setState({dirtyTargetGroups: []});
+  };
+
   public render(): React.ReactElement<Container> {
     const removeTargetGroupMapping = this.removeTargetGroupMapping;
     const updateContainerMappingImage = this.updateContainerMappingImage;
@@ -159,6 +167,7 @@ export class Container extends React.Component<IContainerProps, IContainerState>
     const updateTargetGroupMappingPort = this.updateTargetGroupMappingPort;
     const updateComputeUnits = this.updateComputeUnits;
     const updateReservedMemory = this.updateReservedMemory;
+    const dirtyTagetGroups = this.props.command.viewState.dirty.targetGroups ? this.props.command.viewState.dirty.targetGroups : [];
 
     const dockerImageOptions = this.state.dockerImages.map(function (image) {
       let msg = '';
@@ -167,6 +176,31 @@ export class Container extends React.Component<IContainerProps, IContainerState>
       }
       return { label: `${msg} (${image.imageId})`, value: image.imageId };
     });
+
+    const dirtyTargetGroupList = dirtyTagetGroups ? dirtyTagetGroups.map(function (targetGroup){
+        return (
+          <li>{targetGroup}</li>
+        );
+      }) : '';
+
+    const dirtyTargetGroupSection = (
+       <div className="alert alert-warning">
+         <p>
+           <i className="fa fa-exclamation-triangle"></i>
+           The following target groups could not be found in the selected account/region/VPC and were removed:
+         </p>
+         <ul>
+           {dirtyTargetGroupList}
+         </ul>
+         <p className="text-right">
+           <a
+             className="btn btn-sm btn-default dirty-flag-dismiss"
+             onClick={() => this.updateDirtyTargetGroups()}
+           >Okay</a
+           >
+         </p>
+       </div>
+       );
 
     const newTargetGroupMapping = this.state.targetGroupsAvailable.length ? (
       <button
@@ -227,6 +261,7 @@ export class Container extends React.Component<IContainerProps, IContainerState>
 
     return (
       <div className="container-fluid form-horizontal">
+        {dirtyTagetGroups.length > 0 ? ( <div>{dirtyTargetGroupSection}</div>) : ''}
         <div className="form-group">
           <div className="col-md-3 sm-label-right">
             <b>Container Image</b>
