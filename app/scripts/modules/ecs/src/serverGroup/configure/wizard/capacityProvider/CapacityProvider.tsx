@@ -165,7 +165,6 @@ class EcsCapacityProvider extends React.Component<IEcsCapacityProviderProps, IEc
               disabled= {useDefaultCapacityProviders}
               type="number"
               className="form-control input-sm no-spel"
-              required={true}
               value={mapping.base}
               onChange={(e) => updateCapacityProviderBase(index, e.target.valueAsNumber)}
             />
