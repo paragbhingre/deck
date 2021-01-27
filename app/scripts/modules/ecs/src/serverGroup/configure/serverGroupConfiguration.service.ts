@@ -297,7 +297,7 @@ export class EcsServerGroupConfigurationService {
         .value();
     });
 
-    if(command.ecsClusterName != null || command.ecsClusterName.length > 0){
+    if(command.ecsClusterName != null && command.ecsClusterName.length > 0){
       this.configureAvailableCapacityProviders(command);
     } else {
       command.backingData.filtered.availableCapacityProviders = [];
@@ -326,7 +326,7 @@ export class EcsServerGroupConfigurationService {
   public mapCapacityProviderDetails(describeClusters: IEcsCapacityProviderDetails) : IEcsCapacityProviderDetails {
     return {
       capacityProviders : describeClusters.capacityProviders,
-      clusterName :describeClusters.clusterName,
+      clusterName : describeClusters.clusterName,
       defaultCapacityProviderStrategy : describeClusters.defaultCapacityProviderStrategy
     };
   }
