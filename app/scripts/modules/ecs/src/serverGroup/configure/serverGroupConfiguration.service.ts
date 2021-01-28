@@ -46,6 +46,7 @@ import { IServiceDiscoveryRegistryDescriptor } from '../../serviceDiscovery/ISer
 
 export interface IEcsServerGroupCommandDirty extends IServerGroupCommandDirty {
   targetGroup?: string;
+  capacityProviders?: string[];
 }
 
 export interface IEcsServerGroupCommandResult extends IServerGroupCommandResult {
@@ -65,6 +66,7 @@ export interface IEcsServerGroupCommandViewState extends IServerGroupCommandView
   contextImages: IEcsDockerImage[];
   pipeline: IPipeline;
   currentStage: IStage;
+  dirty: IEcsServerGroupCommandDirty;
 }
 
 export interface IEcsServerGroupCommandBackingDataFiltered extends IServerGroupCommandBackingDataFiltered {
@@ -662,6 +664,19 @@ export class EcsServerGroupConfigurationService {
         this.configureAvailableServiceDiscoveryRegistries(command);
         this.configureAvailableRegions(command);
         this.setCapacityProviderDetails(command);
+
+        if(command.capacityProviderStrategy && command.backingData.filtered.availableCapacityProviders){
+          const availableCapacityProviders = command.backingData.filtered.availableCapacityProviders;
+          const currentCapacityProviders = command.capacityProviderStrategy.map(cp => cp.capacityProvider);
+          const matched = intersection(availableCapacityProviders, currentCapacityProviders);
+          const removedCapacityProviders = xor(matched, currentCapacityProviders);
+
+          if (removedCapacityProviders && removedCapacityProviders.length > 0) {
+            command.viewState.dirty.capacityProviders = removedCapacityProviders;
+          } else if(command.viewState.dirty && command.viewState.dirty.capacityProviders) {
+            command.viewState.dirty.capacityProviders = [];
+          }
+        }
 
         if (!some(backingData.filtered.regions, { name: command.region })) {
           command.region = null;
