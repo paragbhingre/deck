@@ -45,7 +45,7 @@ import { ServiceDiscoveryReader } from '../../serviceDiscovery/serviceDiscovery.
 import { IServiceDiscoveryRegistryDescriptor } from '../../serviceDiscovery/IServiceDiscovery';
 
 export interface IEcsServerGroupCommandDirty extends IServerGroupCommandDirty {
-  targetGroup?: string;
+  targetGroups?: string[];
 }
 
 export interface IEcsServerGroupCommandResult extends IServerGroupCommandResult {
@@ -65,6 +65,7 @@ export interface IEcsServerGroupCommandViewState extends IServerGroupCommandView
   contextImages: IEcsDockerImage[];
   pipeline: IPipeline;
   currentStage: IStage;
+  dirty: IEcsServerGroupCommandDirty;
 }
 
 export interface IEcsServerGroupCommandBackingDataFiltered extends IServerGroupCommandBackingDataFiltered {
@@ -558,7 +559,7 @@ export class EcsServerGroupConfigurationService {
     const newLoadBalancers = this.getLoadBalancerNames(command);
     const vpcLoadBalancers = this.getVpcLoadBalancerNames(command);
     const allTargetGroups = this.getTargetGroupNames(command);
-
+    const currentTargetGroups = command.targetGroupMappings.map(tg => tg.targetGroup)
     if (currentLoadBalancers && command.loadBalancers) {
       const valid = command.vpcId ? newLoadBalancers : newLoadBalancers.concat(vpcLoadBalancers);
       const matched = intersection(valid, currentLoadBalancers);
@@ -571,6 +572,16 @@ export class EcsServerGroupConfigurationService {
       }
       if (removedLoadBalancers.length) {
         result.dirty.loadBalancers = removedLoadBalancers;
+      }
+    }
+
+    if (currentTargetGroups) {
+      const matched = intersection(allTargetGroups, currentTargetGroups);
+      const removedTargetGroups = xor(matched, currentTargetGroups);
+      if (removedTargetGroups && removedTargetGroups.length > 0) {
+        command.viewState.dirty.targetGroups = removedTargetGroups;
+      } else if(command.viewState.dirty && command.viewState.dirty.targetGroups) {
+        command.viewState.dirty.targetGroups = [];
       }
     }
 
