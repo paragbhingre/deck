@@ -27,11 +27,11 @@ class EcsCapacityProvider extends React.Component<IEcsCapacityProviderProps, IEc
     const cmd = this.props.command;
 
     this.state = {
-      availableCapacityProviders: this.setAvailableCapacityProviders(cmd),
-      defaultCapacityProviderStrategy: this.setDefaultCapacityProviderStrategy(cmd),
+      availableCapacityProviders: this.getAvailableCapacityProviders(cmd),
+      defaultCapacityProviderStrategy: this.getDefaultCapacityProviderStrategy(cmd),
       ecsClusterName: cmd.ecsClusterName,
       useDefaultCapacityProviders: cmd.useDefaultCapacityProviders || cmd.capacityProviderStrategy && cmd.capacityProviderStrategy.length == 0,
-      capacityProviderStrategy: cmd.capacityProviderStrategy.length > 0 ? cmd.capacityProviderStrategy : [],
+      capacityProviderStrategy: cmd.capacityProviderStrategy && cmd.capacityProviderStrategy.length > 0 ? cmd.capacityProviderStrategy : [],
       capacityProviderLoadedFlag: false
     };
   }
@@ -41,9 +41,9 @@ class EcsCapacityProvider extends React.Component<IEcsCapacityProviderProps, IEc
       const cmd = this.props.command;
       const useDefaultCapacityProviders = this.state.useDefaultCapacityProviders;
       this.setState({
-        availableCapacityProviders: this.setAvailableCapacityProviders(cmd),
-        defaultCapacityProviderStrategy: this.setDefaultCapacityProviderStrategy(cmd),
-        capacityProviderStrategy: this.setCapacityProviderStrategy(useDefaultCapacityProviders, cmd),
+        availableCapacityProviders: this.getAvailableCapacityProviders(cmd),
+        defaultCapacityProviderStrategy: this.getDefaultCapacityProviderStrategy(cmd),
+        capacityProviderStrategy: this.getCapacityProviderStrategy(useDefaultCapacityProviders, cmd),
         capacityProviderLoadedFlag: true,
       });
       this.props.notifyAngular('useDefaultCapacityProviders', this.state.useDefaultCapacityProviders);
@@ -51,15 +51,15 @@ class EcsCapacityProvider extends React.Component<IEcsCapacityProviderProps, IEc
     });
   }
 
-  private setAvailableCapacityProviders = (cmd: IEcsServerGroupCommand) => {
+  private getAvailableCapacityProviders = (cmd: IEcsServerGroupCommand) => {
     return cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.availableCapacityProviders ? cmd.backingData.filtered.availableCapacityProviders : [];
   };
 
-  private setDefaultCapacityProviderStrategy = (cmd: IEcsServerGroupCommand) => {
+  private getDefaultCapacityProviderStrategy = (cmd: IEcsServerGroupCommand) => {
     return cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy ? cmd.backingData.filtered.defaultCapacityProviderStrategy : [];
   };
 
-  private setCapacityProviderStrategy = (useDefaultCapacityProviders: boolean, cmd : IEcsServerGroupCommand) => {
+  private getCapacityProviderStrategy = (useDefaultCapacityProviders: boolean, cmd : IEcsServerGroupCommand) => {
     return useDefaultCapacityProviders && cmd.backingData && cmd.backingData.filtered && cmd.backingData.filtered.defaultCapacityProviderStrategy ? cmd.backingData.filtered.defaultCapacityProviderStrategy : this.state.capacityProviderStrategy;
   };
 
@@ -101,19 +101,14 @@ class EcsCapacityProvider extends React.Component<IEcsCapacityProviderProps, IEc
     this.setState({ capacityProviderStrategy: capacityProviderStrategy });
   };
 
-  private updateCapacityProviderStrategy = (targetCapacityProviderType: boolean) => {
+  private updateCapacityProviderType = (targetCapacityProviderType: boolean) => {
     this.setState({useDefaultCapacityProviders : targetCapacityProviderType});
     this.props.notifyAngular("useDefaultCapacityProviders", targetCapacityProviderType);
 
-    if (targetCapacityProviderType && this.state.defaultCapacityProviderStrategy.length > 0) {
-        this.setState({capacityProviderStrategy : this.state.defaultCapacityProviderStrategy});
-        this.props.notifyAngular('capacityProviderStrategy', this.state.defaultCapacityProviderStrategy );
-    } else {
-      this.setState({capacityProviderStrategy : []});
-      this.props.notifyAngular('capacityProviderStrategy', []);
-    }
+    const capacityProviderStrategy = targetCapacityProviderType && this.state.defaultCapacityProviderStrategy.length > 0 ? this.state.defaultCapacityProviderStrategy : [];
+    this.setState({ capacityProviderStrategy : capacityProviderStrategy });
+    this.props.notifyAngular('capacityProviderStrategy',  capacityProviderStrategy);
   };
-
 
   render(): React.ReactElement<EcsCapacityProvider> {
 
@@ -122,7 +117,7 @@ class EcsCapacityProvider extends React.Component<IEcsCapacityProviderProps, IEc
     const updateCapacityProviderWeight = this.updateCapacityProviderWeight;
     const addCapacityProviderStrategy = this.addCapacityProviderStrategy;
     const removeCapacityProviderStrategy = this.removeCapacityProviderStrategy;
-    const updateCapacityProviderStrategy = this.updateCapacityProviderStrategy;
+    const updateCapacityProviderType = this.updateCapacityProviderType;
     const capacityProviderStrategy = this.state.capacityProviderStrategy;
     const useDefaultCapacityProviders = this.state.useDefaultCapacityProviders;
     const capacityProviderLoadedFlag = this.state.capacityProviderLoadedFlag;
@@ -196,13 +191,16 @@ class EcsCapacityProvider extends React.Component<IEcsCapacityProviderProps, IEc
       </div></tr> )
       : '';
 
-    const newCapacityProviderStrategy =   this.state.ecsClusterName && this.props.command.credentials && this.props.command.region && !useDefaultCapacityProviders ? (
+    const newCapacityProviderStrategy =   this.state.ecsClusterName && this.props.command.credentials && this.props.command.region && !useDefaultCapacityProviders && capacityProviderNames.length > 0 ? (
       <button data-test-id="ServerGroup.addCapacityProvider" className="btn btn-block btn-sm add-new" onClick={addCapacityProviderStrategy}>
         <span className="glyphicon glyphicon-plus-sign" />
         Add New Capacity Provider
       </button>
+    ) : !useDefaultCapacityProviders && capacityProviderLoadedFlag && capacityProviderNames.length == 0 ? (
+      <div className="sm-label-left" style={{width: "200%"}}>
+        <Alert color="warning"> The cluster does not have capacity providers defined. </Alert>
+      </div>
     ) : '';
-
 
     return (
       <div>
@@ -216,7 +214,7 @@ class EcsCapacityProvider extends React.Component<IEcsCapacityProviderProps, IEc
               data-test-id="ServerGroup.capacityProviders.default"
               type="radio"
               checked={useDefaultCapacityProviders}
-              onClick={() => updateCapacityProviderStrategy(true)}
+              onClick={() => updateCapacityProviderType(true)}
               id="computeOptionsLaunchType1"
             />
             Use cluster default
@@ -228,7 +226,7 @@ class EcsCapacityProvider extends React.Component<IEcsCapacityProviderProps, IEc
               data-test-id="ServerGroup.capacityProviders.custom"
               type="radio"
               checked= {!useDefaultCapacityProviders}
-              onClick={() => updateCapacityProviderStrategy(false)}
+              onClick={() => updateCapacityProviderType(false)}
               id="computeOptionsCapacityProviders2"
             />
             Use custom (Advanced)
