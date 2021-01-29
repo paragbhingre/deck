@@ -130,7 +130,7 @@ class EcsCapacityProvider extends React.Component<IEcsCapacityProviderProps, IEc
 
     const capacityProviderNames = this.state.availableCapacityProviders &&  this.state.availableCapacityProviders.length > 0 ?  this.state.availableCapacityProviders.map((capacityProviderNames) => {
       return { label: `${capacityProviderNames}`, value: capacityProviderNames };
-    }) : []
+    }) : [];
 
     const capacityProviderInputs = capacityProviderStrategy.length > 0 ? capacityProviderStrategy.map(function (mapping, index) {
       return (
