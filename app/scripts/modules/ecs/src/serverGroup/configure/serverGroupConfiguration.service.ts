@@ -46,7 +46,8 @@ import { IServiceDiscoveryRegistryDescriptor } from '../../serviceDiscovery/ISer
 
 export interface IEcsServerGroupCommandDirty extends IServerGroupCommandDirty {
   targetGroups?: string[];
-  capacityProviders?: string[];
+  defaulCapacityProviders?: string[];
+  customCapacityProviders?: string[];
 }
 
 export interface IEcsServerGroupCommandResult extends IServerGroupCommandResult {
@@ -635,9 +636,22 @@ export class EcsServerGroupConfigurationService {
       const removedCapacityProviders = xor(matched, currentCapacityProviders);
 
       if (removedCapacityProviders && removedCapacityProviders.length > 0) {
-        command.viewState.dirty.capacityProviders = removedCapacityProviders;
-      } else if(command.viewState.dirty && command.viewState.dirty.capacityProviders) {
-        command.viewState.dirty.capacityProviders = [];
+        command.viewState.dirty.customCapacityProviders = removedCapacityProviders;
+      } else if(command.viewState.dirty && command.viewState.dirty.customCapacityProviders) {
+        command.viewState.dirty.customCapacityProviders = [];
+      }
+
+      if(command.useDefaultCapacityProviders){
+        const availableDefaultCapacityProvider = command.backingData.filtered.defaultCapacityProviderStrategy
+          .map(cp => cp.capacityProvider);
+        const matchedDefaultCapacityProviders = intersection(availableDefaultCapacityProvider, currentCapacityProviders);
+        const removedDefaultCapacityProviders = xor(matchedDefaultCapacityProviders, currentCapacityProviders);
+
+        if (removedDefaultCapacityProviders && removedDefaultCapacityProviders.length > 0) {
+          command.viewState.dirty.defaulCapacityProviders = removedDefaultCapacityProviders;
+        } else if(command.viewState.dirty && command.viewState.dirty.defaulCapacityProviders) {
+          command.viewState.dirty.defaulCapacityProviders = [];
+        }
       }
     }
   }
