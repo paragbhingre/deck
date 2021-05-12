@@ -1,0 +1,16 @@
+{
+  "cloudProvider": "ecs",
+  "health": [
+    {
+      "instanceId": "5880e2f5d22e485d834d1d38861147aa",
+      "state": "Up", "type": "loadBalancer"
+    }
+  ],
+  "healthState": "Up",
+  "humanReadableName": "5880e2f5d22e485d834d1d38861147aa",
+  "launchTime": 1618943988476,
+  "name": "5880e2f5d22e485d834d1d38861147aa",
+  "providerType": "ecs"
+
+}
+
